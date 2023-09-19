@@ -1,0 +1,80 @@
+[package]
+name = "pocket-relay-dump"
+version = "0.0.2"
+edition = "2021"
+description = "ASI plugin for ME3 to allow playing on Pocket Relay servers"
+repository = "https://github.com/PocketRelay/PocketRelayHooks"
+license = "MIT"
+readme = "README.md"
+authors = ["Jacobtread <jacobtread@gmail.com>"]
+keywords = ["Hooking"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+log = "0.4.20"
+log-panics = { version = "2", features = ["with-backtrace"] }
+
+reqwest = { version = "0.11", features = ["json", "gzip"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Blaze SSLv3 async TCPStream implementation
+blaze-ssl-async = "^0.3"
+
+tdf = "0.1"
+bytes = "1.4.0"
+
+tokio-util = { version = "0.7", features = ["codec"] }
+futures-util = { version = "0.3", features = ["sink"] }
+thiserror = "1"
+hyper = { version = "0.14", features = ["server", "http1", "tcp", "runtime"] }
+
+[dependencies.windows-sys]
+version = "0.48"
+features = [
+    "Win32_Foundation",
+    "Win32_System_SystemServices",
+    "Win32_System_Memory",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Console",
+    "Win32_Networking_WinSock",
+]
+
+# Tokio async runtime
+[dependencies.tokio]
+version = "1"
+features = [
+    "macros",
+    "net",
+    "parking_lot",
+    "rt-multi-thread",
+    "sync",
+    "signal",
+    "fs",
+]
+
+
+[dependencies.native-windows-gui]
+version = "1.0.13"
+
+
+# Logging provider 
+[dependencies.log4rs]
+version = "1.2.0"
+default-features = false
+features = ["console_appender", "file_appender"]
+
+
+# Compile x86
+# cargo build --release --target i686-pc-windows-msvc
+
+# Compile std to reduce size:
+# cargo +nightly build -Z build-std=std,panic_abort --release --target x86_64-pc-windows-msvc
+# [profile.release]
+# opt-level = "z"
+# codegen-units = 1
+# panic = "abort"
+# strip = true
+# lto = true
