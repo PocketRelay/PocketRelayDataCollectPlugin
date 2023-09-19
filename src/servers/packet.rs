@@ -1,3 +1,4 @@
+use bitflags::bitflags;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use std::fmt::Debug;
 use std::io;
@@ -13,13 +14,23 @@ use crate::servers::components::{component_key, get_command_name, get_component_
 #[repr(u8)]
 pub enum PacketType {
     /// ID counted request packets (0x00)
-    Request = 0x00,
+    Request = 0x0,
     /// Packets responding to requests (0x10)
-    Response = 0x10,
+    Response = 0x1,
     /// Unique packets coming from the server (0x20)
-    Notify = 0x20,
+    Notify = 0x2,
     /// Error packets (0x30)
-    Error = 0x30,
+    Error = 0x3,
+}
+bitflags! {
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    pub struct PacketOptions: u8 {
+        const NONE = 0x0;
+        const JUMBO_FRAME = 0x1;
+        const HAS_CONTXT = 0x2;
+        const IMMEDIATE = 0x4;
+        const JUMBO_CONTEXT = 0x8;
+    }
 }
 
 /// From u8 implementation to convert bytes back into
@@ -27,10 +38,10 @@ pub enum PacketType {
 impl From<u8> for PacketType {
     fn from(value: u8) -> Self {
         match value {
-            0x00 => PacketType::Request,
-            0x10 => PacketType::Response,
-            0x20 => PacketType::Notify,
-            0x30 => PacketType::Error,
+            0x0 => PacketType::Request,
+            0x1 => PacketType::Response,
+            0x2 => PacketType::Notify,
+            0x3 => PacketType::Error,
             _ => PacketType::Request,
         }
     }
@@ -40,19 +51,18 @@ impl From<u8> for PacketType {
 /// packet content and describes it.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PacketHeader {
-    /// The component of this packet
     pub component: u16,
-    /// The command of this packet
     pub command: u16,
-    /// A possible error this packet contains (zero is none)
     pub error: u16,
-    /// The type of this packet
     pub ty: PacketType,
-    /// The unique ID of this packet (Notify packets this is just zero)
-    pub id: u16,
+    pub options: PacketOptions,
+    pub seq: u16,
 }
 
 impl PacketHeader {
+    const MIN_HEADER_SIZE: usize = 12;
+    const JUMBO_SIZE: usize = std::mem::size_of::<u16>();
+
     /// Creates a response to the provided packet header by
     /// changing the type of the header
     pub const fn response(&self) -> Self {
@@ -68,7 +78,8 @@ impl PacketHeader {
             command: self.command,
             error: self.error,
             ty,
-            id: self.id,
+            options: PacketOptions::NONE,
+            seq: self.seq,
         }
     }
     /// Creates a request header for the provided id, component
@@ -83,30 +94,39 @@ impl PacketHeader {
             command,
             error: 0,
             ty: PacketType::Request,
-            id,
+            options: PacketOptions::NONE,
+            seq: id,
         }
     }
+
     pub fn path_matches(&self, other: &PacketHeader) -> bool {
         self.component.eq(&other.component) && self.command.eq(&other.command)
     }
 
     pub fn write(&self, dst: &mut BytesMut, length: usize) {
-        let is_extended = length > 0xFFFF;
-        dst.put_u16(length as u16);
+        let mut options = self.options;
+        if length > 0xFFFF {
+            options |= PacketOptions::JUMBO_FRAME;
+        }
+
+        dst.put_u8((length >> 8) as u8);
+        dst.put_u8(length as u8);
+
         dst.put_u16(self.component);
         dst.put_u16(self.command);
         dst.put_u16(self.error);
-        dst.put_u8(self.ty as u8);
-        dst.put_u8(if is_extended { 0x10 } else { 0x00 });
-        dst.put_u16(self.id);
-        if is_extended {
-            dst.put_u8(((length & 0xFF000000) >> 24) as u8);
-            dst.put_u8(((length & 0x00FF0000) >> 16) as u8);
+        dst.put_u8((self.ty as u8) << 4);
+        dst.put_u8(self.options.bits() << 4);
+        dst.put_u16(self.seq);
+
+        if self.options.contains(PacketOptions::JUMBO_FRAME) {
+            dst.put_u8((length >> 24) as u8);
+            dst.put_u8((length >> 16) as u8);
         }
     }
 
     pub fn read(src: &mut BytesMut) -> Option<(PacketHeader, usize)> {
-        if src.len() < 12 {
+        if src.len() < Self::MIN_HEADER_SIZE {
             return None;
         }
 
@@ -114,18 +134,19 @@ impl PacketHeader {
         let component = src.get_u16();
         let command = src.get_u16();
         let error = src.get_u16();
-        let ty = src.get_u8();
-        // If we encounter 0x10 here then the packet contains extended length
-        // bytes so its longer than a u16::MAX length
-        let is_extended = src.get_u8() == 0x10;
-        let id = src.get_u16();
+        let ty = src.get_u8() >> 4;
+        let options = src.get_u8() >> 4;
+        let options = PacketOptions::from_bits_retain(options);
+        let seq = src.get_u16();
 
-        if is_extended {
+        if options.contains(PacketOptions::JUMBO_FRAME) {
             // We need another two bytes for the extended length
-            if src.len() < 2 {
+            if src.len() < Self::JUMBO_SIZE {
                 return None;
             }
-            length += src.get_u16() as usize;
+            let b1 = src.get_u8();
+            let b2 = src.get_u8();
+            length |= ((b1 as usize) << 24) | ((b2 as usize) << 16);
         }
 
         let ty = PacketType::from(ty);
@@ -134,7 +155,8 @@ impl PacketHeader {
             command,
             error,
             ty,
-            id,
+            options,
+            seq,
         };
         Some((header, length))
     }
@@ -290,10 +312,10 @@ impl<'a> Debug for PacketDebug<'a> {
 
         if is_error {
             // Write sequence number and error for errors
-            write!(f, " ({}, E?{:#06x})", header.id, header.error)?;
+            write!(f, " ({}, E?{:#06x})", header.seq, header.error)?;
         } else if !is_notify {
             // Write sequence number of sequenced types
-            write!(f, " ({})", header.id)?;
+            write!(f, " ({})", header.seq)?;
         }
 
         writeln!(
@@ -302,6 +324,7 @@ impl<'a> Debug for PacketDebug<'a> {
             component_name, command_name, header.component, header.command
         )?;
 
+        writeln!(f, "Options: {:?}", header.options)?;
         write!(f, "Content: ")?;
 
         let r = TdfDeserializer::new(&self.packet.contents);
@@ -309,10 +332,11 @@ impl<'a> Debug for PacketDebug<'a> {
 
         // Stringify the content or append error instead
         let _ = !str.stringify();
-        writeln!(
-            &mut str.w,
-            "Raw: {:?}",
-            self.packet.contents.as_ref() as &[u8]
-        )
+        // writeln!(
+        //     &mut str.w,
+        //     "\nRaw: {:?}",
+        //     self.packet.contents.as_ref() as &[u8]
+        // )
+        Ok(())
     }
 }

@@ -993,6 +993,7 @@ checksum = "9e76628b4d3a7581389a35d5b6e2139607ad7c75b17aed325f210aa91f4a9609"
 name = "pocket-relay-dump"
 version = "0.0.2"
 dependencies = [
+ "bitflags 2.4.0",
  "blaze-ssl-async",
  "bytes",
  "futures-util",
