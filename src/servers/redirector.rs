@@ -83,10 +83,10 @@ async fn handle_client(accept: BlazeAccept) -> io::Result<()> {
             None => break,
         };
 
-        let header = &packet.header;
+        let frame = &packet.frame;
 
         // Empty response for any unknown requests
-        if header.component != REDIRECTOR || header.command != GET_SERVER_INSTANCE {
+        if frame.component != REDIRECTOR || frame.command != GET_SERVER_INSTANCE {
             // Empty response for packets that aren't asking to redirect
             framed.send(Packet::response_empty(&packet)).await?;
             continue;
