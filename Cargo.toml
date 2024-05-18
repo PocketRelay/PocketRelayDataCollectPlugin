@@ -31,6 +31,7 @@ futures-util = { version = "0.3", features = ["sink"] }
 thiserror = "1"
 hyper = { version = "0.14", features = ["server", "http1", "tcp", "runtime"] }
 bitflags = "2.4.0"
+directories = "5.0.1"
 
 [dependencies.windows-sys]
 version = "0.48"

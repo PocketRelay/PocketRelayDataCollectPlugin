@@ -1,3 +1,4 @@
+use directories::UserDirs;
 use log::LevelFilter;
 use log4rs::{
     append::{console::ConsoleAppender, file::FileAppender},
@@ -9,12 +10,15 @@ use log4rs::{
 /// The pattern to use when logging
 const LOGGING_PATTERN: &str = "[{d} {h({l})} {M}] {m}{n}";
 
-/// Log file name
-pub const LOG_FILE_NAME: &str = "dump/server.log";
-
 /// Setup function for setting up the Log4rs logging configuring it
 /// for all the different modules and and setting up file and stdout logging
 pub fn setup() {
+    let user_dirs = UserDirs::new().expect("failed to get user dir");
+    let doc_dir = user_dirs
+        .document_dir()
+        .expect("Failed to get document dir")
+        .join("pocket-relay-dump.log");
+
     std::env::set_var("RUST_LOG", "debug");
     // Create logging appenders
     let pattern = Box::new(PatternEncoder::new(LOGGING_PATTERN));
@@ -22,7 +26,7 @@ pub fn setup() {
     let file = Box::new(
         FileAppender::builder()
             .encoder(pattern)
-            .build(LOG_FILE_NAME)
+            .build(doc_dir)
             .expect("Unable to create logging file appender"),
     );
 
