@@ -23,7 +23,7 @@ serde_json = "1"
 # Blaze SSLv3 async TCPStream implementation
 blaze-ssl-async = "^0.3"
 
-tdf = "0.1"
+tdf = "0.4"
 bytes = "1.4.0"
 
 tokio-util = { version = "0.7", features = ["codec"] }
