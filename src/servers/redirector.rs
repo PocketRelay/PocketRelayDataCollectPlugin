@@ -17,14 +17,17 @@ use super::packet::PacketCodec;
 /// proxy server that will connect them to the target server.
 pub async fn start_server() {
     // Bind a listener for SSLv3 connections over TCP
-    let listener = match BlazeListener::bind((Ipv4Addr::UNSPECIFIED, REDIRECTOR_PORT)).await {
-        Ok(value) => value,
-        Err(err) => {
-            error_message("Failed to start redirector", &err.to_string());
-            error!("Failed to start redirector: {}", err);
-            return;
-        }
-    };
+    let listener =
+        match BlazeListener::bind((Ipv4Addr::UNSPECIFIED, REDIRECTOR_PORT), Default::default())
+            .await
+        {
+            Ok(value) => value,
+            Err(err) => {
+                error_message("Failed to start redirector", &err.to_string());
+                error!("Failed to start redirector: {}", err);
+                return;
+            }
+        };
 
     // Accept incoming connections
     loop {

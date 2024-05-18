@@ -1,4 +1,4 @@
-use blaze_ssl_async::{stream::BlazeStream, BlazeError};
+use blaze_ssl_async::stream::BlazeStream;
 use futures_util::{SinkExt, StreamExt};
 use log::{debug, error};
 use reqwest;
@@ -138,7 +138,7 @@ pub enum InstanceError {
     #[error("Failed to lookup server response empty")]
     MissingValue,
     #[error("Failed to connect to server: {0}")]
-    Blaze(#[from] BlazeError),
+    Blaze(#[from] io::Error),
     #[error("Failed to retrieve instance: {0}")]
     InstanceRequest(#[from] RetrieverError),
     #[error("Server response missing address")]
@@ -222,7 +222,7 @@ impl OfficialInstance {
     /// Creates a stream to the main server and wraps it with a
     /// session returning that session. Will return None if the
     /// stream failed.
-    pub async fn stream(&self) -> Result<BlazeStream, BlazeError> {
+    pub async fn stream(&self) -> Result<BlazeStream, io::Error> {
         BlazeStream::connect((self.host.as_str(), self.port)).await
     }
 }
@@ -257,7 +257,7 @@ pub type RetrieverResult<T> = Result<T, RetrieverError>;
 impl OfficialSession {
     /// Creates a session with an official server at the provided
     /// `host` and `port`
-    async fn connect(host: &str, port: u16) -> Result<OfficialSession, BlazeError> {
+    async fn connect(host: &str, port: u16) -> Result<OfficialSession, io::Error> {
         let stream = BlazeStream::connect((host, port)).await?;
         Ok(Self {
             id: 0,
