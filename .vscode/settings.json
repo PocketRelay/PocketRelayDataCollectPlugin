@@ -1,0 +1,31 @@
+{
+    "cSpell.words": [
+        "addrtype",
+        "appender",
+        "appenders",
+        "bitflags",
+        "BSDK",
+        "BTIM",
+        "CLNT",
+        "CLTP",
+        "CSKU",
+        "CVER",
+        "DSDK",
+        "FPID",
+        "gethostbyname",
+        "gosredirector",
+        "HOSTENT",
+        "masseffect",
+        "movzx",
+        "PCSTR",
+        "proxied",
+        "READWRITE",
+        "REDIRECTOR",
+        "repr",
+        "reqwest",
+        "SECU",
+        "Stringifier",
+        "VALU",
+        "XDNS"
+    ]
+}

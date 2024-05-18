@@ -55,8 +55,8 @@ pub unsafe extern "system" fn fake_gethostbyname(name: PCSTR) -> *mut HOSTENT {
 
     debug!("Got Host Lookup Request {}", str_name.to_string_lossy());
 
-    // We are only targetting gosredirecotr for host redirects
-    // forward null responses aswell
+    // We are only targeting gosredirector for host redirects
+    // forward null responses as well
     if str_name.to_bytes() != b"gosredirector.ea.com" {
         // Obtain the actual host lookup result
         return gethostbyname(name);

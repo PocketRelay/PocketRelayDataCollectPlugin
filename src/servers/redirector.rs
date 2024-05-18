@@ -92,7 +92,7 @@ async fn handle_client(accept: BlazeAccept) -> io::Result<()> {
             continue;
         }
 
-        debug!("Recieved instance request packet");
+        debug!("Received instance request packet");
 
         // Response with the instance details
         let response = Packet::response(&packet, ServerInstanceResponse);
@@ -104,7 +104,7 @@ async fn handle_client(accept: BlazeAccept) -> io::Result<()> {
 }
 
 /// Packet contents for providing the redirection details
-/// for 127.0.0.1 to allow proxying
+/// for 127.0.0.1 to allow the traffic to be proxied
 pub struct ServerInstanceResponse;
 
 impl TdfSerialize for ServerInstanceResponse {

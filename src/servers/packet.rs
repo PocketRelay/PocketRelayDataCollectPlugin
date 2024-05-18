@@ -54,7 +54,7 @@ pub struct FireFrame {
     pub error: u16,
     /// The type of frame
     pub ty: FrameType,
-    /// Additional options assocaited with this frame
+    /// Additional options associated with this frame
     pub options: PacketOptions,
     /// Sequence number for tracking request and response mappings
     pub seq: u16,
@@ -174,7 +174,7 @@ impl FireFrame {
 
 #[derive(Debug, Clone)]
 pub struct Packet {
-    /// The frame preceeding this packet
+    /// The frame preceding this packet
     pub frame: FireFrame,
     /// The encoded contents of the packet
     pub contents: Bytes,
@@ -333,7 +333,7 @@ impl Encoder<Packet> for PacketCodec {
     }
 }
 
-/// Wrapper over a packet structure to provde debug logging
+/// Wrapper over a packet structure to provide debug logging
 /// with names resolved for the component
 pub struct PacketDebug<'a> {
     /// Reference to the packet itself
@@ -351,7 +351,7 @@ impl<'a> Debug for PacketDebug<'a> {
         let is_error = matches!(&header.ty, FrameType::Error);
 
         let component_name = get_component_name(header.component).unwrap_or("Unknown");
-        let command_name = get_command_name(key, is_notify).unwrap_or("Unkown");
+        let command_name = get_command_name(key, is_notify).unwrap_or("Unknown");
 
         write!(f, "{:?}", header.ty)?;
 

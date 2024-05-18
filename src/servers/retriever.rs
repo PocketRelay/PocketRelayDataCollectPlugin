@@ -95,7 +95,7 @@ impl TdfDeserializeOwned for InstanceHost {
 }
 
 /// Details about an instance. This is used for the redirector system
-/// to both encode for redirections and decode for the retriever system
+/// to both encode for redirecting and decode for the retriever system
 #[derive(TdfDeserialize)]
 pub struct InstanceDetails {
     /// The networking information for the instance
@@ -146,7 +146,7 @@ pub enum InstanceError {
 }
 
 impl OfficialInstance {
-    const REDIRECTOR_HOST: &str = "gosredirector.ea.com";
+    const REDIRECTOR_HOST: &'static str = "gosredirector.ea.com";
     const REDIRECT_PORT: u16 = 42127;
 
     pub async fn obtain() -> Result<OfficialInstance, InstanceError> {
@@ -192,7 +192,7 @@ impl OfficialInstance {
 
             if let Some(tokio) = tokio {
                 let ip = tokio.ip();
-                // Loopback value means it was probbably redirected in the hosts file
+                // Loopback value means it was probably redirected in the hosts file
                 // so those are ignored
                 if !ip.is_loopback() {
                     return Ok(format!("{}", ip));
@@ -200,7 +200,7 @@ impl OfficialInstance {
             }
         }
 
-        // Attempt to lookup using cloudflares DNS over HTTP
+        // Attempt to lookup using cloudflare DNS over HTTP
 
         let client = reqwest::Client::new();
         let url = format!("https://cloudflare-dns.com/dns-query?name={host}&type=A");
@@ -238,7 +238,7 @@ pub struct OfficialSession {
 /// Error type for retriever errors
 #[derive(Debug, Error)]
 pub enum RetrieverError {
-    /// Packet decode errror
+    /// Packet decode error
     #[error(transparent)]
     Decode(#[from] DecodeError),
     /// IO Error
@@ -265,7 +265,7 @@ impl OfficialSession {
         })
     }
     /// Writes a request packet and waits until the response packet is
-    /// recieved returning the contents of that response packet.
+    /// received returning the contents of that response packet.
     pub async fn request<Req, Res>(
         &mut self,
         component: u16,
@@ -282,7 +282,7 @@ impl OfficialSession {
     }
 
     /// Writes a request packet and waits until the response packet is
-    /// recieved returning the contents of that response packet.
+    /// received returning the contents of that response packet.
     pub async fn request_raw<Req: TdfSerialize>(
         &mut self,
         component: u16,
@@ -301,7 +301,7 @@ impl OfficialSession {
     }
 
     /// Writes a request packet and waits until the response packet is
-    /// recieved returning the contents of that response packet. The
+    /// received returning the contents of that response packet. The
     /// request will have no content
     pub async fn request_empty<Res>(&mut self, component: u16, command: u16) -> RetrieverResult<Res>
     where
@@ -313,7 +313,7 @@ impl OfficialSession {
     }
 
     /// Writes a request packet and waits until the response packet is
-    /// recieved returning the raw response packet
+    /// received returning the raw response packet
     pub async fn request_empty_raw(
         &mut self,
         component: u16,
@@ -327,8 +327,8 @@ impl OfficialSession {
         self.expect_response(&frame).await
     }
 
-    /// Waits for a response packet to be recieved any notification packets
-    /// that are recieved are handled in the handle_notify function.
+    /// Waits for a response packet to be received any notification packets
+    /// that are received are handled in the handle_notify function.
     async fn expect_response(&mut self, request: &FireFrame) -> RetrieverResult<Packet> {
         loop {
             let response = match self.stream.next().await {

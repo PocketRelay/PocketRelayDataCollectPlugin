@@ -41,7 +41,7 @@ impl Pattern {
     }
 
     /// Attempts to apply a pattern with a transformed
-    /// adddress
+    /// address
     ///
     /// # Arguments
     /// * pattern - The pattern to use
@@ -93,7 +93,7 @@ impl Pattern {
     /// # Arguments
     /// * addr - The address to protect
     /// * length - The protected region
-    /// * action - The aciton to execute on the memory
+    /// * action - The action to execute on the memory
     unsafe fn use_memory<F, P>(addr: *const P, length: usize, action: F)
     where
         F: FnOnce(*mut P),
@@ -119,7 +119,7 @@ impl Pattern {
 
         action(addr.cast_mut());
 
-        // Unprotect the memory region
+        // Un-protect the memory region
         VirtualProtect(addr as *const c_void, length, old_protect, &mut old_protect);
     }
 }
